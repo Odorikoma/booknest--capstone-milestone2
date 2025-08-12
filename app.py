@@ -1,58 +1,61 @@
+# app.py
 import os
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager
 
-# 你自己的模块按需保留
 from config import Config
 from routes.auth import auth_bp
 from routes.books import books_bp
 from routes.borrows import borrows_bp
-from models import User
 
 
-def create_app():
+def create_app() -> Flask:
     app = Flask(__name__)
-
-    # 载入配置
     app.config.from_object(Config)
 
-    # 初始化 JWT
-    JWTManager(app)
+    # 允许前端域名跨域（在 Config.CORS_ORIGINS 里配置了生产前端域名即可）
+    cors_origins = getattr(Config, "CORS_ORIGINS", ["*"])
+    CORS(app, origins=cors_origins, supports_credentials=True)
 
-    # 允许跨域（只放行你在 Config.CORS_ORIGINS 里配置的来源）
-    CORS(app, origins=Config.CORS_ORIGINS, supports_credentials=True)
-
+    # -----------------------------
     # 注册蓝图
+    # 说明：你的蓝图文件里如果路由已经写成 /api/xxx（例如 /api/books），
+    # 就用下面这三行（不再加 url_prefix），避免出现 /api/api/... 的问题。
     app.register_blueprint(auth_bp)
     app.register_blueprint(books_bp)
     app.register_blueprint(borrows_bp)
 
-    @app.route("/api/health", methods=["GET"])
-    def health_check():
-        return jsonify(success=True)
+    # 如果你的蓝图里是 /books、/auth 这种**不带 /api** 的路径，
+    # 请把上面三行替换为下面三行（带 url_prefix）：
+    # app.register_blueprint(auth_bp,    url_prefix="/api")
+    # app.register_blueprint(books_bp,   url_prefix="/api")
+    # app.register_blueprint(borrows_bp, url_prefix="/api")
+    # -----------------------------
 
-    # （可选）一个简单搜索示例，保留你的逻辑即可
-    @app.route("/api/search", methods=["GET"])
-    def search_users():
-        query = request.args.get("query", "").strip()
-        if not query:
-            return jsonify(success=False, message="Query parameter required"), 400
+    @app.get("/api/health")
+    def health():
+        return jsonify(success=True, service="booknest-api")
 
-        results = User.search(query)
-        users = [{"id": r["id"], "username": r["username"], "email": r["email"]} for r in results]
-        return jsonify(success=True, data=users)
+    @app.get("/")
+    def root():
+        # 访问根路径时给一个友好的 404 JSON
+        return jsonify(message="API endpoint not found", success=False), 404
 
     return app
 
 
-# 提供给 Gunicorn / Railway 的 WSGI 入口
+# 让 gunicorn 可以直接 import 到 app 对象
 app = create_app()
 
+# 启动时把所有路由打到日志里，方便确认真实路径
+print("== ROUTES ==")
+for rule in app.url_map.iter_rules():
+    print(f"{sorted(rule.methods)}  {rule.rule}")
+print("== END ROUTES ==")
 
 if __name__ == "__main__":
-    # 本地运行用，Railway 也可以用，但不如 Gunicorn 稳定
-    port = int(os.getenv("PORT", 8080))  # 关键：使用 $PORT（Railway 会注入）
+    # Railway 会注入 PORT；本地没有时默认 8080
+    port = int(os.getenv("PORT", "8080"))
     app.run(host="0.0.0.0", port=port, debug=False)
 
 
