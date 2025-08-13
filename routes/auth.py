@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models import User
 from flask_jwt_extended import create_access_token
-from werkzeug.security import generate_password_hash, check_password_hash
+from passlib.hash import pbkdf2_sha256  # 用于哈希和验证密码
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -22,12 +22,12 @@ def register():
         if existing_user:
             return jsonify({"success": False, "message": "Email already registered"}), 400
 
-        # 生成 password_hash
-        hashed_password = generate_password_hash(data["password"])
+        # 使用 passlib 生成哈希
+        hashed_password = pbkdf2_sha256.hash(data["password"])
         result = User.create(
             username=data["username"],
             email=data["email"],
-            password_hash=hashed_password,  # 注意这里
+            password_hash=hashed_password,
             role=data.get("role", "user"),
         )
 
@@ -57,8 +57,8 @@ def login():
         if not user:
             return jsonify({"success": False, "message": "Incorrect email or password"}), 401
 
-        # 使用 check_password_hash 检查
-        if not check_password_hash(user["password_hash"], data["password"]):
+        # ✅ 用 passlib 验证哈希
+        if not pbkdf2_sha256.verify(data["password"], user["password_hash"]):
             return jsonify({"success": False, "message": "Incorrect email or password"}), 401
 
         user_info = {
@@ -69,7 +69,6 @@ def login():
         }
 
         access_token = create_access_token(identity=user["id"])
-
         return jsonify({
             "success": True,
             "data": user_info,
