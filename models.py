@@ -3,7 +3,6 @@
 from utils.database import db
 from datetime import datetime
 
-
 class User:
     """User model"""
 
@@ -11,7 +10,7 @@ class User:
     def create(username, email, password_hash, role="user"):
         """Create a new user"""
         query = """
-        INSERT INTO users (username, email, password_hash, role, created_at)
+        INSERT INTO users (username, email, password_hash, role, create_at)
         VALUES (%s, %s, %s, %s, %s)
         """
         params = (username, email, password_hash, role, datetime.now())
@@ -37,7 +36,6 @@ class User:
         sql = "SELECT * FROM users WHERE username LIKE %s OR email LIKE %s"
         pattern = f"%{query}%"
         return db.execute_query(sql, (pattern, pattern))
-
 
 class Book:
     """Book model"""
@@ -123,10 +121,10 @@ class BorrowRecord:
     def create(user_id, book_id, status="requested", borrow_date=None):
         """Create a borrow record"""
         query = """
-        INSERT INTO borrow_records (user_id, book_id, status, borrow_date)
+        INSERT INTO borrows (user_id, book_id, borrow_status, borrow_date)
         VALUES (%s, %s, %s, %s)
         """
-        params = (user_id, book_id, status, borrow_date)
+        params = (user_id, book_id, status, borrow_date or datetime.now())
         result = db.execute_update(query, params)
         return result
 
@@ -134,9 +132,9 @@ class BorrowRecord:
     def get_by_user(user_id):
         """Get borrowing history by user with book title and author"""
         query = """
-        SELECT br.id, br.user_id, br.book_id, br.borrow_date, br.return_date, br.status, 
+        SELECT br.id, br.user_id, br.book_id, br.borrow_date, br.return_date, br.borrow_status, 
             b.title, b.author 
-        FROM borrow_records br
+        FROM borrows br
         JOIN books b ON br.book_id = b.id
         WHERE br.user_id = %s
         ORDER BY br.borrow_date DESC
@@ -149,14 +147,14 @@ class BorrowRecord:
         """Get all borrow records, optionally filtered by status"""
         query = """
         SELECT br.*, b.title, b.author, u.username, u.email 
-        FROM borrow_records br 
+        FROM borrows br 
         JOIN books b ON br.book_id = b.id 
         JOIN users u ON br.user_id = u.id
         """
         params = []
 
         if status:
-            query += " WHERE br.status = %s"
+            query += " WHERE br.borrow_status = %s"
             params.append(status)
 
         query += " ORDER BY br.borrow_date DESC"
@@ -168,11 +166,11 @@ class BorrowRecord:
         """Update the borrow status"""
         if return_date:
             query = (
-                "UPDATE borrow_records SET status = %s, return_date = %s WHERE id = %s"
+                "UPDATE borrows SET borrow_status = %s, return_date = %s WHERE id = %s"
             )
             params = (status, return_date, record_id)
         else:
-            query = "UPDATE borrow_records SET status = %s WHERE id = %s"
+            query = "UPDATE borrows SET borrow_status = %s WHERE id = %s"
             params = (status, record_id)
 
         result = db.execute_update(query, params)
@@ -181,7 +179,7 @@ class BorrowRecord:
     @staticmethod
     def find_by_id(record_id):
         """Find a borrow record by ID"""
-        query = "SELECT * FROM borrow_records WHERE id = %s"
+        query = "SELECT * FROM borrows WHERE id = %s"
         result = db.execute_query(query, (record_id,))
         return result[0] if result else None
 
