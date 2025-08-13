@@ -43,6 +43,20 @@ def create_app() -> Flask:
 
     return app
 
+    @app.route('/api/users', methods=['GET'])
+    def search_users():
+        query = request.args.get('query', '').strip()
+        if not query:
+            return jsonify(success=False, message="Query parameter required"), 400
+
+        results = User.search(query)
+
+        users = [{"id": r['id'], "username": r['username'], "email": r['email']} for r in results]
+
+        return jsonify(success=True, data=users)
+    
+    return app
+
 
 # 让 gunicorn 可以直接 import 到 app 对象
 app = create_app()
@@ -57,6 +71,7 @@ if __name__ == "__main__":
     # Railway 会注入 PORT；本地没有时默认 8080
     port = int(os.getenv("PORT", "8080"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
 
 
 
