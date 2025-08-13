@@ -1,14 +1,12 @@
 from flask import Blueprint, request, jsonify
 from models import User
 from flask_jwt_extended import create_access_token
-from werkzeug.security import check_password_hash, generate_password_hash
+from passlib.hash import pbkdf2_sha256  # 用于哈希和验证密码
 
 auth_bp = Blueprint("auth", __name__)
 
-
 @auth_bp.route("/api/auth/register", methods=["POST"])
 def register():
-    """User Registration"""
     try:
         data = request.get_json()
 
@@ -23,13 +21,12 @@ def register():
         if existing_user:
             return jsonify({"success": False, "message": "Email already registered"}), 400
 
-        # 使用 werkzeug 生成 PBKDF2 哈希
-        hashed_password = generate_password_hash(data["password"])
+        hashed_password = pbkdf2_sha256.hash(data["password"])
 
         result = User.create(
             username=data["username"],
             email=data["email"],
-            password=hashed_password,
+            password_hash=hashed_password,
             role=data.get("role", "user"),
         )
 
@@ -44,7 +41,6 @@ def register():
 
 @auth_bp.route("/api/auth/login", methods=["POST"])
 def login():
-    """User Login"""
     try:
         data = request.get_json()
 
@@ -59,8 +55,7 @@ def login():
         if not user:
             return jsonify({"success": False, "message": "Incorrect email or password"}), 401
 
-        # 使用 werkzeug 验证 PBKDF2 哈希密码
-        if not check_password_hash(user["password_hash"], data["password"]):
+        if not pbkdf2_sha256.verify(data["password"], user["password_hash"]):
             return jsonify({"success": False, "message": "Incorrect email or password"}), 401
 
         user_info = {
