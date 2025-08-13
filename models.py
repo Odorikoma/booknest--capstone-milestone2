@@ -37,6 +37,7 @@ class User:
         pattern = f"%{query}%"
         return db.execute_query(sql, (pattern, pattern))
 
+
 class Book:
     """Book model"""
 
@@ -66,24 +67,24 @@ class Book:
         return result[0] if result else None
 
     @staticmethod
-    def create(title, author, description, stock, cover_image_url=None):
+    def create(title, author, description, stock, cover_image_url=None, price=0.0):
         """Create a new book"""
         query = """
-        INSERT INTO books (title, author, description, stock, cover_image_url, created_at, updated_at)
+        INSERT INTO books (title, author, description, stock, cover_image_url, price, created_at)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
         now = datetime.now()
-        params = (title, author, description, stock, cover_image_url, now, now)
+        params = (title, author, description, stock, cover_image_url, price, now)
         result = db.execute_update(query, params)
         return result
 
     @staticmethod
-    def update(book_id, title, author, description, stock, cover_image_url=None):
+    def update(book_id, title, author, description, stock, cover_image_url=None, price=0.0):
         """Update book information"""
         query = """
         UPDATE books 
         SET title = %s, author = %s, description = %s, stock = %s, 
-            cover_image_url = %s, updated_at = %s 
+            cover_image_url = %s, price = %s, created_at = %s 
         WHERE id = %s
         """
         params = (
@@ -92,6 +93,7 @@ class Book:
             description,
             stock,
             cover_image_url,
+            price,
             datetime.now(),
             book_id,
         )
@@ -108,7 +110,7 @@ class Book:
     @staticmethod
     def update_stock(book_id, stock_change):
         """Update book stock quantity"""
-        query = "UPDATE books SET stock = stock + %s, updated_at = %s WHERE id = %s"
+        query = "UPDATE books SET stock = stock + %s, created_at = %s WHERE id = %s"
         params = (stock_change, datetime.now(), book_id)
         result = db.execute_update(query, params)
         return result
@@ -118,13 +120,13 @@ class BorrowRecord:
     """Borrowing record model"""
 
     @staticmethod
-    def create(user_id, book_id, status="requested", borrow_date=None):
+    def create(user_id, book_id, borrow_status="requested", borrow_date=None):
         """Create a borrow record"""
         query = """
-        INSERT INTO borrows (user_id, book_id, borrow_status, borrow_date)
+        INSERT INTO borrows (user_id, book_id, borrow_date, borrow_status)
         VALUES (%s, %s, %s, %s)
         """
-        params = (user_id, book_id, status, borrow_date or datetime.now())
+        params = (user_id, book_id, borrow_date or datetime.now(), borrow_status)
         result = db.execute_update(query, params)
         return result
 
@@ -133,7 +135,7 @@ class BorrowRecord:
         """Get borrowing history by user with book title and author"""
         query = """
         SELECT br.id, br.user_id, br.book_id, br.borrow_date, br.return_date, br.borrow_status, 
-            b.title, b.author 
+               b.title, b.author 
         FROM borrows br
         JOIN books b ON br.book_id = b.id
         WHERE br.user_id = %s
@@ -143,7 +145,7 @@ class BorrowRecord:
         return result or []
 
     @staticmethod
-    def get_all(status=None):
+    def get_all(borrow_status=None):
         """Get all borrow records, optionally filtered by status"""
         query = """
         SELECT br.*, b.title, b.author, u.username, u.email 
@@ -153,25 +155,25 @@ class BorrowRecord:
         """
         params = []
 
-        if status:
+        if borrow_status:
             query += " WHERE br.borrow_status = %s"
-            params.append(status)
+            params.append(borrow_status)
 
         query += " ORDER BY br.borrow_date DESC"
         result = db.execute_query(query, params if params else None)
         return result or []
 
     @staticmethod
-    def update_status(record_id, status, return_date=None):
+    def update_status(record_id, borrow_status, return_date=None):
         """Update the borrow status"""
         if return_date:
             query = (
                 "UPDATE borrows SET borrow_status = %s, return_date = %s WHERE id = %s"
             )
-            params = (status, return_date, record_id)
+            params = (borrow_status, return_date, record_id)
         else:
             query = "UPDATE borrows SET borrow_status = %s WHERE id = %s"
-            params = (status, record_id)
+            params = (borrow_status, record_id)
 
         result = db.execute_update(query, params)
         return result
