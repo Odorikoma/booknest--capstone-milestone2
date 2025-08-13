@@ -1,5 +1,3 @@
-# Data Model Definitions
-
 from utils.database import db
 from datetime import datetime
 
@@ -7,35 +5,26 @@ class User:
     """User model"""
 
     @staticmethod
-    def create(username, email, password_hash, role="user"):
-        """Create a new user"""
+    def create(username, email, password, role="user"):
         query = """
-        INSERT INTO users (username, email, password_hash, role, create_at)
+        INSERT INTO users (username, email, password, role, created_at)
         VALUES (%s, %s, %s, %s, %s)
         """
-        params = (username, email, password_hash, role, datetime.now())
+        params = (username, email, password, role, datetime.now())
         result = db.execute_update(query, params)
         return result
 
     @staticmethod
     def find_by_email(email):
-        """Find a user by email"""
         query = "SELECT * FROM users WHERE email = %s"
         result = db.execute_query(query, (email,))
         return result[0] if result else None
 
     @staticmethod
     def find_by_id(user_id):
-        """Find a user by ID"""
         query = "SELECT * FROM users WHERE id = %s"
         result = db.execute_query(query, (user_id,))
         return result[0] if result else None
-
-    @staticmethod
-    def search(query):
-        sql = "SELECT * FROM users WHERE username LIKE %s OR email LIKE %s"
-        pattern = f"%{query}%"
-        return db.execute_query(sql, (pattern, pattern))
 
 
 class Book:
@@ -43,7 +32,6 @@ class Book:
 
     @staticmethod
     def get_all(search_title=None, search_author=None):
-        """Get all books, with optional search"""
         query = "SELECT * FROM books WHERE 1=1"
         params = []
 
@@ -61,30 +49,27 @@ class Book:
 
     @staticmethod
     def find_by_id(book_id):
-        """Find a book by ID"""
         query = "SELECT * FROM books WHERE id = %s"
         result = db.execute_query(query, (book_id,))
         return result[0] if result else None
 
     @staticmethod
-    def create(title, author, description, stock, cover_image_url=None, price=0.0):
-        """Create a new book"""
+    def create(title, author, description, stock, cover_image_url=None):
         query = """
-        INSERT INTO books (title, author, description, stock, cover_image_url, price, created_at)
+        INSERT INTO books (title, author, description, stock, cover_image_url, created_at, updated_at)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
         now = datetime.now()
-        params = (title, author, description, stock, cover_image_url, price, now)
+        params = (title, author, description, stock, cover_image_url, now, now)
         result = db.execute_update(query, params)
         return result
 
     @staticmethod
-    def update(book_id, title, author, description, stock, cover_image_url=None, price=0.0):
-        """Update book information"""
+    def update(book_id, title, author, description, stock, cover_image_url=None):
         query = """
         UPDATE books 
         SET title = %s, author = %s, description = %s, stock = %s, 
-            cover_image_url = %s, price = %s, created_at = %s 
+            cover_image_url = %s, updated_at = %s 
         WHERE id = %s
         """
         params = (
@@ -93,7 +78,6 @@ class Book:
             description,
             stock,
             cover_image_url,
-            price,
             datetime.now(),
             book_id,
         )
@@ -102,86 +86,14 @@ class Book:
 
     @staticmethod
     def delete(book_id):
-        """Delete a book"""
         query = "DELETE FROM books WHERE id = %s"
         result = db.execute_update(query, (book_id,))
         return result
 
     @staticmethod
     def update_stock(book_id, stock_change):
-        """Update book stock quantity"""
-        query = "UPDATE books SET stock = stock + %s, created_at = %s WHERE id = %s"
+        query = "UPDATE books SET stock = stock + %s, updated_at = %s WHERE id = %s"
         params = (stock_change, datetime.now(), book_id)
         result = db.execute_update(query, params)
         return result
-
-
-class BorrowRecord:
-    """Borrowing record model"""
-
-    @staticmethod
-    def create(user_id, book_id, borrow_status="requested", borrow_date=None):
-        """Create a borrow record"""
-        query = """
-        INSERT INTO borrows (user_id, book_id, borrow_date, borrow_status)
-        VALUES (%s, %s, %s, %s)
-        """
-        params = (user_id, book_id, borrow_date or datetime.now(), borrow_status)
-        result = db.execute_update(query, params)
-        return result
-
-    @staticmethod
-    def get_by_user(user_id):
-        """Get borrowing history by user with book title and author"""
-        query = """
-        SELECT br.id, br.user_id, br.book_id, br.borrow_date, br.return_date, br.borrow_status, 
-               b.title, b.author 
-        FROM borrows br
-        JOIN books b ON br.book_id = b.id
-        WHERE br.user_id = %s
-        ORDER BY br.borrow_date DESC
-        """
-        result = db.execute_query(query, (user_id,))
-        return result or []
-
-    @staticmethod
-    def get_all(borrow_status=None):
-        """Get all borrow records, optionally filtered by status"""
-        query = """
-        SELECT br.*, b.title, b.author, u.username, u.email 
-        FROM borrows br 
-        JOIN books b ON br.book_id = b.id 
-        JOIN users u ON br.user_id = u.id
-        """
-        params = []
-
-        if borrow_status:
-            query += " WHERE br.borrow_status = %s"
-            params.append(borrow_status)
-
-        query += " ORDER BY br.borrow_date DESC"
-        result = db.execute_query(query, params if params else None)
-        return result or []
-
-    @staticmethod
-    def update_status(record_id, borrow_status, return_date=None):
-        """Update the borrow status"""
-        if return_date:
-            query = (
-                "UPDATE borrows SET borrow_status = %s, return_date = %s WHERE id = %s"
-            )
-            params = (borrow_status, return_date, record_id)
-        else:
-            query = "UPDATE borrows SET borrow_status = %s WHERE id = %s"
-            params = (borrow_status, record_id)
-
-        result = db.execute_update(query, params)
-        return result
-
-    @staticmethod
-    def find_by_id(record_id):
-        """Find a borrow record by ID"""
-        query = "SELECT * FROM borrows WHERE id = %s"
-        result = db.execute_query(query, (record_id,))
-        return result[0] if result else None
 
