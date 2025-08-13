@@ -8,13 +8,13 @@ class User:
     """User model"""
 
     @staticmethod
-    def create(username, email, password, role="user"):
+    def create(username, email, password_hash, role="user"):
         """Create a new user"""
         query = """
-        INSERT INTO users (username, email, password, role, created_at)
+        INSERT INTO users (username, email, password_hash, role, created_at)
         VALUES (%s, %s, %s, %s, %s)
         """
-        params = (username, email, password, role, datetime.now())
+        params = (username, email, password_hash, role, datetime.now())
         result = db.execute_update(query, params)
         return result
 
@@ -37,6 +37,7 @@ class User:
         sql = "SELECT * FROM users WHERE username LIKE %s OR email LIKE %s"
         pattern = f"%{query}%"
         return db.execute_query(sql, (pattern, pattern))
+
 
 class Book:
     """Book model"""
@@ -183,3 +184,4 @@ class BorrowRecord:
         query = "SELECT * FROM borrow_records WHERE id = %s"
         result = db.execute_query(query, (record_id,))
         return result[0] if result else None
+
