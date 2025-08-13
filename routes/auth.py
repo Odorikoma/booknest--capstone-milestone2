@@ -1,12 +1,11 @@
 from flask import Blueprint, request, jsonify
 from models import User
-from flask_jwt_extended import create_access_token
-from passlib.hash import pbkdf2_sha256  # 用于哈希和验证密码
 
 auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.route("/api/auth/register", methods=["POST"])
 def register():
+    """User Registration"""
     try:
         data = request.get_json()
 
@@ -21,12 +20,10 @@ def register():
         if existing_user:
             return jsonify({"success": False, "message": "Email already registered"}), 400
 
-        hashed_password = pbkdf2_sha256.hash(data["password"])
-
         result = User.create(
             username=data["username"],
             email=data["email"],
-            password_hash=hashed_password,
+            password=data["password"],  # 明文存储
             role=data.get("role", "user"),
         )
 
@@ -41,6 +38,7 @@ def register():
 
 @auth_bp.route("/api/auth/login", methods=["POST"])
 def login():
+    """User Login"""
     try:
         data = request.get_json()
 
@@ -55,7 +53,7 @@ def login():
         if not user:
             return jsonify({"success": False, "message": "Incorrect email or password"}), 401
 
-        if not pbkdf2_sha256.verify(data["password"], user["password_hash"]):
+        if user["password"] != data["password"]:  # 直接明文比较
             return jsonify({"success": False, "message": "Incorrect email or password"}), 401
 
         user_info = {
@@ -65,12 +63,9 @@ def login():
             "role": user["role"],
         }
 
-        access_token = create_access_token(identity=user["id"])
-
         return jsonify({
             "success": True,
             "data": user_info,
-            "access_token": access_token,
             "message": "Login successful"
         })
 
