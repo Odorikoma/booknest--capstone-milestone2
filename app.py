@@ -2,8 +2,9 @@
 import os
 from flask import Flask, jsonify
 from flask_cors import CORS
-
+from flask_jwt_extended import JWTManager
 from config import Config
+from models import User
 from routes.auth import auth_bp
 from routes.books import books_bp
 from routes.borrows import borrows_bp
@@ -12,6 +13,9 @@ from routes.borrows import borrows_bp
 def create_app() -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    # 初始化 JWT 管理器
+    jwt = JWTManager(app)
 
     # 允许前端域名跨域（在 Config.CORS_ORIGINS 里配置了生产前端域名即可）
     cors_origins = getattr(Config, "CORS_ORIGINS", ["*"])
@@ -71,6 +75,7 @@ if __name__ == "__main__":
     # Railway 会注入 PORT；本地没有时默认 8080
     port = int(os.getenv("PORT", "8080"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
 
 
 
