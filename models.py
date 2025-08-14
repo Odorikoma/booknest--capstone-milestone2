@@ -43,9 +43,9 @@ class User:
         return rows[0] if rows else None
 
     @staticmethod
-    def search(q):
+    def search(query):
         sql = "SELECT * FROM users WHERE username LIKE %s OR email LIKE %s"
-        pattern = f"%{q}%"
+        pattern = f"%{query}%"
         return db.execute_query(sql, (pattern, pattern))
 
 
@@ -172,4 +172,5 @@ class BorrowRecord:
         sql = "SELECT * FROM borrows WHERE id = %s"
         rows = db.execute_query(sql, (record_id,))
         return rows[0] if rows else None
+
 
