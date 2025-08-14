@@ -45,8 +45,6 @@ def create_app() -> Flask:
         # 访问根路径时给一个友好的 404 JSON
         return jsonify(message="API endpoint not found", success=False), 404
 
-    return app
-
     @app.route('/api/users', methods=['GET'])
     def search_users():
         query = request.args.get('query', '').strip()
@@ -75,6 +73,7 @@ if __name__ == "__main__":
     # Railway 会注入 PORT；本地没有时默认 8080
     port = int(os.getenv("PORT", "8080"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
 
 
 
