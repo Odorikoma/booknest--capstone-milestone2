@@ -1,5 +1,3 @@
-# Data Model Definitions
-
 from utils.database import db
 from datetime import datetime
 
@@ -24,7 +22,17 @@ class User:
 
     @staticmethod
     def find_by_email(email):
-        sql = "SELECT * FROM users WHERE email = %s"
+        # 显式选择列并给 password_hash 起别名，避免 KeyError
+        sql = """
+        SELECT id,
+               username,
+               email,
+               password_hash AS password,
+               role,
+               create_at
+          FROM users
+         WHERE email = %s
+        """
         rows = db.execute_query(sql, (email,))
         return rows[0] if rows else None
 
