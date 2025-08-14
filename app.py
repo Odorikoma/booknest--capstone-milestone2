@@ -11,7 +11,7 @@ from routes.borrows import borrows_bp
 
 
 def create_app() -> Flask:
-    app = Flask(__name__, static_folder='static')
+    app = Flask(__name__, static_folder='assets')
     app.config.from_object(Config)
 
     # 初始化 JWT 管理器
@@ -84,6 +84,7 @@ if __name__ == "__main__":
     # Railway 会注入 PORT；本地没有时默认 8080
     port = int(os.getenv("PORT", "8080"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
 
 
 
