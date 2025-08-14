@@ -46,16 +46,17 @@ def create_app() -> Flask:
         return jsonify(message="API endpoint not found", success=False), 404
 
     @app.route('/api/users', methods=['GET'])
-    def search_users():
-        query = request.args.get('query', '').strip()
-        if not query:
-            return jsonify(success=False, message="Query parameter required"), 400
-
+def search_users():
+    query = request.args.get('query', '').strip()
+    if not query:
+        return jsonify(success=False, message="Query parameter required"), 400
+    try:
         results = User.search(query)
-
         users = [{"id": r['id'], "username": r['username'], "email": r['email']} for r in results]
-
         return jsonify(success=True, data=users)
+    except Exception as e:
+        print("User search error:", e)
+        return jsonify(success=False, message=str(e)), 500
     
     return app
 
@@ -73,6 +74,7 @@ if __name__ == "__main__":
     # Railway 会注入 PORT；本地没有时默认 8080
     port = int(os.getenv("PORT", "8080"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
 
 
 
