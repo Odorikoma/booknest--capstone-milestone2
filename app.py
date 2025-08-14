@@ -58,6 +58,15 @@ def create_app() -> Flask:
             print("User search error:", e)  # <--- 打印异常
             return jsonify(success=False, message=str(e)), 500
 
+    # 捕获所有静态文件请求
+    @app.route('/<path:filename>')
+    def serve_static(filename):
+        """
+        访问 /book-detail.html?id=3
+        Flask 返回静态文件，并保留 query string
+        """
+        return send_from_directory(app.static_folder, filename)
+
         
     return app
 
@@ -75,6 +84,7 @@ if __name__ == "__main__":
     # Railway 会注入 PORT；本地没有时默认 8080
     port = int(os.getenv("PORT", "8080"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
 
 
 
