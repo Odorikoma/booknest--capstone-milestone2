@@ -100,11 +100,9 @@ def get_user_borrows(user_id):
 def get_all_borrows():
     """Get all borrow records (admin use)"""
     try:
-        # Get query parameters
-        status = request.args.get('status')
-        
-        # Retrieve borrow records
-        borrows = BorrowRecord.get_all(status=status)
+        # 从 query string 获取 borrow_status
+        borrow_status = request.args.get('borrow_status')  # 前端传 ?borrow_status=requested
+        borrows = BorrowRecord.get_all(borrow_status=borrow_status)
         
         return jsonify({
             'success': True,
@@ -118,6 +116,7 @@ def get_all_borrows():
             'message': f'Failed to retrieve borrow records: {str(e)}'
         }), 500
 
+
 @borrows_bp.route('/api/borrows/<int:record_id>/status', methods=['PUT'])
 def update_borrow_status(record_id):
     """Update borrow status (admin use)"""
@@ -125,10 +124,10 @@ def update_borrow_status(record_id):
         data = request.get_json()
         
         # Validate required field
-        if 'status' not in data:
+        if 'borrow_status' not in data:
             return jsonify({
                 'success': False,
-                'message': 'Missing required field: status'
+                'message': 'Missing required field: borrow_status'
             }), 400
         
         # Check if record exists
@@ -139,20 +138,20 @@ def update_borrow_status(record_id):
                 'message': 'Borrow record not found'
             }), 404
         
-        status = data['status']
+        borrow_status = data['borrow_status']  # 改成 borrow_status
         return_date = None
         
         # If changing to 'borrowed', reduce stock
-        if status == 'borrowed' and record['status'] == 'requested':
+        if borrow_status == 'borrowed' and record['borrow_status'] == 'requested':
             Book.update_stock(record['book_id'], -1)
         
         # If changing to 'returned', increase stock and set return date
-        elif status == 'returned' and record['status'] == 'borrowed':
+        elif borrow_status == 'returned' and record['borrow_status'] == 'borrowed':
             Book.update_stock(record['book_id'], 1)
             return_date = datetime.now()
         
         # Update borrow status
-        result = BorrowRecord.update_status(record_id, status, return_date)
+        result = BorrowRecord.update_status(record_id, borrow_status, return_date)
         
         if result:
             return jsonify({
@@ -194,3 +193,4 @@ def get_borrow_record(record_id):
             'success': False,
             'message': f'Failed to retrieve borrow record: {str(e)}'
         }), 500
+
