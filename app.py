@@ -46,19 +46,19 @@ def create_app() -> Flask:
         return jsonify(message="API endpoint not found", success=False), 404
 
     @app.route('/api/users', methods=['GET'])
-def search_users():
-    query = request.args.get('query', '').strip()
-    if not query:
-        return jsonify(success=False, message="Query parameter required"), 400
-    try:
-        results = User.search(query)
-        users = [{"id": r['id'], "username": r['username'], "email": r['email']} for r in results]
-        return jsonify(success=True, data=users)
-    except Exception as e:
-        print("User search error:", e)
-        return jsonify(success=False, message=str(e)), 500
-    
-    return app
+    def search_users():
+        query = request.args.get('query', '').strip()
+        if not query:
+            return jsonify(success=False, message="Query parameter required"), 400
+        try:
+            results = User.search(query)
+            users = [{"id": r['id'], "username": r['username'], "email": r['email']} for r in results]
+            return jsonify(success=True, data=users)
+        except Exception as e:
+            print("User search error:", e)
+            return jsonify(success=False, message=str(e)), 500
+        
+        return app
 
 
 # 让 gunicorn 可以直接 import 到 app 对象
