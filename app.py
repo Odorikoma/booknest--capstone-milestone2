@@ -50,17 +50,13 @@ def create_app() -> Flask:
         query = request.args.get('query', '').strip()
         if not query:
             return jsonify(success=False, message="Query parameter required"), 400
-
-        results = User.search(query)
-
-        users = [{"id": r['id'], "username": r['username'], "email": r['email']} for r in results]
-
-        return jsonify(success=True, data=users)
-
-    
-    @app.route("/book-detail.html")
-    def book_detail():
-        return send_from_directory("assets", "book-detail.html")
+        try:
+            results = User.search(query)
+            users = [{"id": r['id'], "username": r['username'], "email": r['email']} for r in results]
+            return jsonify(success=True, data=users)
+        except Exception as e:
+            print("User search error:", e)  # <--- 打印异常
+            return jsonify(success=False, message=str(e)), 500
 
         
     return app
@@ -79,6 +75,7 @@ if __name__ == "__main__":
     # Railway 会注入 PORT；本地没有时默认 8080
     port = int(os.getenv("PORT", "8080"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
 
 
 
