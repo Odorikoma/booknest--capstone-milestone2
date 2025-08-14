@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import User
+from flask_jwt_extended import create_access_token
 
 auth_bp = Blueprint("auth", __name__)  # 路由仍走 /api/auth/...
 
@@ -69,12 +70,17 @@ def login():
             "role": user.get("role"),
         }
 
+        # 生成JWT token，identity用user id
+        access_token = create_access_token(identity=user["id"])
+
         return jsonify({
             "success": True,
             "data": user_info,
+            "access_token": access_token,  # 返回token
             "message": "Login successful"
         }), 200
 
     except Exception as e:
         return jsonify({"success": False, "message": f"Login failed: {str(e)}"}), 500
+
 
