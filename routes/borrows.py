@@ -48,7 +48,6 @@ def create_borrow_request():
         result = BorrowRecord.create(
             user_id=data['user_id'],
             book_id=data['book_id'],
-            status='requested',
             borrow_date=data['borrow_date']
         )
         
@@ -193,5 +192,6 @@ def get_borrow_record(record_id):
             'success': False,
             'message': f'Failed to retrieve borrow record: {str(e)}'
         }), 500
+
 
 
