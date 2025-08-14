@@ -117,7 +117,7 @@ def get_all_borrows():
         }), 500
 
 
-@borrows_bp.route('/api/borrows/<int:record_id>/status', methods=['PUT'])
+@borrows_bp.route('/api/borrows/<int:record_id>/borrow_status', methods=['PUT'])
 def update_borrow_status(record_id):
     """Update borrow status (admin use)"""
     try:
@@ -193,4 +193,5 @@ def get_borrow_record(record_id):
             'success': False,
             'message': f'Failed to retrieve borrow record: {str(e)}'
         }), 500
+
 
