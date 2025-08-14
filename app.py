@@ -1,6 +1,6 @@
 # app.py
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import Config
@@ -57,10 +57,11 @@ def create_app() -> Flask:
 
         return jsonify(success=True, data=users)
 
-    @app.get("/book-detail.html")
-    def book_detail_page():
-    # assets 目录相对于 app.py 的路径
-        return send_from_directory(os.path.join(app.root_path, "assets"), "book-detail.html")
+    
+    @app.route("/book-detail.html")
+    def book_detail():
+        return send_from_directory("assets", "book-detail.html")
+
         
     return app
 
@@ -78,6 +79,7 @@ if __name__ == "__main__":
     # Railway 会注入 PORT；本地没有时默认 8080
     port = int(os.getenv("PORT", "8080"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
 
 
 
