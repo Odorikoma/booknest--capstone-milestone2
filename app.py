@@ -58,7 +58,7 @@ def create_app() -> Flask:
             print("User search error:", e)
             return jsonify(success=False, message=str(e)), 500
         
-        return app
+    return app
 
 
 # 让 gunicorn 可以直接 import 到 app 对象
@@ -74,6 +74,7 @@ if __name__ == "__main__":
     # Railway 会注入 PORT；本地没有时默认 8080
     port = int(os.getenv("PORT", "8080"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
 
 
 
