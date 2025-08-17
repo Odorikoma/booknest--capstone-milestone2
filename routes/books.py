@@ -2,6 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 from models import Book
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 books_bp = Blueprint('books', __name__)
 
@@ -51,6 +52,7 @@ def get_book(book_id):
         }), 500
 
 @books_bp.route('/api/books', methods=['POST'])
+@jwt_required()
 def create_book():
     """Create a new book"""
     try:
@@ -71,7 +73,8 @@ def create_book():
             author=data['author'],
             description=data['description'],
             stock=int(data['stock']),
-            cover_image_url=data.get('cover_image_url')
+            cover_image_url=data.get('cover_image_url'),
+            price=float(data.get('price', 0.0))
         )
         
         if result:
@@ -92,6 +95,7 @@ def create_book():
         }), 500
 
 @books_bp.route('/api/books/<int:book_id>', methods=['PUT'])
+@jwt_required()
 def update_book(book_id):
     """Update book information"""
     try:
@@ -121,7 +125,8 @@ def update_book(book_id):
             author=data['author'],
             description=data['description'],
             stock=int(data['stock']),
-            cover_image_url=data.get('cover_image_url')
+            cover_image_url=data.get('cover_image_url'),
+            price=float(data.get('price', 0.0))
         )
         
         if result:
@@ -142,6 +147,7 @@ def update_book(book_id):
         }), 500
 
 @books_bp.route('/api/books/<int:book_id>', methods=['DELETE'])
+@jwt_required()
 def delete_book(book_id):
     """Delete a book"""
     try:

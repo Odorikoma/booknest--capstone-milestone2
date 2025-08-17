@@ -70,8 +70,8 @@ def login():
             "role": user.get("role"),
         }
 
-        # 生成JWT token，identity用user id
-        access_token = create_access_token(identity=user["id"])
+        # 生成JWT token，identity用user id（转换为字符串）
+        access_token = create_access_token(identity=str(user["id"]))
 
         return jsonify({
             "success": True,
